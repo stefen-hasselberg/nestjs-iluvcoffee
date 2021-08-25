@@ -6,24 +6,23 @@ import {
 } from '@nestjs/common';
 import { CreateCoffeeDto } from './dto/create-coffee.dto';
 import { Coffee } from './entities/coffee.entity';
+import { Repository } from 'typeorm';
+import { InjectRepository } from '@nestjs/typeorm';
+import { UpdateCoffeeDto } from './dto/update-coffee.dto';
 
 @Injectable()
 export class CoffeesService {
-  private coffees: Coffee[] = [
-    {
-      id: 1,
-      name: 'Shipwreck Roast',
-      brand: 'Buddy Brew',
-      flavours: ['chocolate', 'vanilla'],
-    },
-  ];
+  constructor(
+    @InjectRepository(Coffee)
+    private readonly coffeesRepository: Repository<Coffee>,
+  ) {}
 
-  findAll() {
-    return this.coffees;
+  async findAll() {
+    return await this.coffeesRepository.find();
   }
 
-  findOne(id: string) {
-    const coffee = this.coffees.find((item) => item.id === +id);
+  async findOne(id: string) {
+    const coffee = this.coffeesRepository.findOne(+id);
 
     if (!coffee) {
       // throw new HttpException(`Coffee #${id} not found`, HttpStatus.NOT_FOUND);
@@ -33,24 +32,31 @@ export class CoffeesService {
     return coffee;
   }
 
-  create(createdCoffeeDto: any) {
+  create(createdCoffeeDto: CreateCoffeeDto) {
     console.log(createdCoffeeDto instanceof CreateCoffeeDto);
-    this.coffees.push(createdCoffeeDto);
-    return createdCoffeeDto;
+    const coffee = this.coffeesRepository.create(createdCoffeeDto);
+    return this.coffeesRepository.save(coffee);
   }
 
-  update(id: string, updatedCoffeeDto: any) {
-    const existingCoffee = this.findOne(id);
-    if (existingCoffee) {
-      Object.assign(existingCoffee, updatedCoffeeDto);
+  async update(id: string, updatedCoffeeDto: UpdateCoffeeDto) {
+    // preload fetches a copy of the entity
+    // then we can replace any updated fields
+
+    const coffee = await this.coffeesRepository.preload({
+      id: +id,
+      ...updatedCoffeeDto,
+    });
+
+    if (!coffee) {
+      throw new NotFoundException(`Coffee #${id} not found`);
     }
+
+    return this.coffeesRepository.save(coffee);
   }
 
-  remove(id: string) {
-    const coffeeIndex = this.coffees.findIndex((item) => item.id === +id);
+  async remove(id: string) {
+    const coffee = await this.findOne(id);
 
-    if (coffeeIndex >= 0) {
-      this.coffees.splice(coffeeIndex, 1);
-    }
+    return this.coffeesRepository.remove(coffee);
   }
 }
