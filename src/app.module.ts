@@ -6,6 +6,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
 import { Coffee } from './coffees/entities/coffee.entity';
 import { Flavour } from './coffees/entities/flaour.entity';
+import { CoffeRatingModule } from './coffe-rating/coffe-rating.module';
+import { CoffeeRatingModule } from './coffee-rating/coffee-rating.module';
 
 @Module({
   imports: [
@@ -21,10 +23,12 @@ import { Flavour } from './coffees/entities/flaour.entity';
       entities: [Coffee, Flavour],
       extra: {
         options: {
-          encrypt: true,
+          trustServerCertificate: true,
         },
       },
     }),
+    CoffeRatingModule,
+    CoffeeRatingModule,
   ],
   controllers: [AppController],
   providers: [AppService],
